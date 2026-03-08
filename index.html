@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Joyeuse - Bibliothèque</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🌞</text></svg>">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: system-ui, -apple-system, sans-serif; background: #f8f6f3; color: #333; }
+
+  header { background: linear-gradient(135deg, #ff6b6b, #ffa07a); color: white; padding: 2rem; text-align: center; }
+  header h1 { font-size: 1.8rem; margin-bottom: .3rem; }
+  header p { opacity: .9; font-size: .95rem; }
+
+  .stats { display: flex; gap: .8rem; justify-content: center; flex-wrap: wrap; padding: 1.2rem 1rem; }
+  .stat { background: white; border-radius: 12px; padding: .8rem 1.2rem; box-shadow: 0 2px 8px rgba(0,0,0,.06); text-align: center; min-width: 100px; }
+  .stat .value { font-size: 1.5rem; font-weight: 700; color: #ff6b6b; }
+  .stat .label { font-size: .75rem; color: #888; margin-top: .15rem; }
+
+  .space-bar { margin: 0 1.5rem 1rem; background: white; border-radius: 12px; padding: 1rem 1.2rem; box-shadow: 0 2px 8px rgba(0,0,0,.06); }
+  .space-bar h3 { font-size: .85rem; color: #666; margin-bottom: .5rem; }
+  .bar-track { height: 20px; background: #f0eeeb; border-radius: 10px; overflow: hidden; position: relative; }
+  .bar-fill { height: 100%; border-radius: 10px; transition: width .3s; }
+  .bar-fill.ok { background: linear-gradient(90deg, #4ecdc4, #45b7aa); }
+  .bar-fill.warn { background: linear-gradient(90deg, #f4a261, #e76f51); }
+  .bar-fill.full { background: linear-gradient(90deg, #e76f51, #d32f2f); }
+  .space-details { display: flex; justify-content: space-between; margin-top: .4rem; font-size: .75rem; color: #999; }
+  .space-warning { margin-top: .5rem; padding: .4rem .8rem; background: #fff3e0; border-radius: 8px; font-size: .8rem; color: #e65100; }
+
+  .tabs { display: flex; justify-content: center; gap: .5rem; padding: 0 1rem; margin-bottom: 1rem; }
+  .tab { padding: .6rem 1.2rem; border: none; border-radius: 20px; cursor: pointer; font-size: .9rem; background: white; color: #666; transition: all .2s; }
+  .tab.active { background: #ff6b6b; color: white; }
+  .tab:hover:not(.active) { background: #ffe0d0; }
+
+  .controls { display: flex; gap: .6rem; padding: 0 1.5rem 1rem; flex-wrap: wrap; align-items: center; }
+  .search { flex: 1; min-width: 180px; padding: .6rem 1rem; border: 2px solid #eee; border-radius: 10px; font-size: .9rem; outline: none; }
+  .search:focus { border-color: #ff6b6b; }
+  .filter-btn { padding: .5rem .8rem; border: 2px solid #eee; border-radius: 10px; background: white; cursor: pointer; font-size: .8rem; white-space: nowrap; }
+  .filter-btn.active { border-color: #ff6b6b; background: #fff0ed; color: #ff6b6b; }
+  select.sort-select { padding: .5rem .8rem; border: 2px solid #eee; border-radius: 10px; font-size: .8rem; background: white; outline: none; }
+
+  .content { padding: 0 1.5rem 2rem; }
+
+  /* On-device view */
+  .face-section { margin-bottom: 1.5rem; }
+  .face-header { display: flex; align-items: center; gap: .6rem; margin-bottom: .8rem; }
+  .face-icon { width: 36px; height: 36px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 1.1rem; color: white; font-weight: 700; }
+  .face-name { font-size: 1.1rem; font-weight: 600; }
+  .face-count { font-size: .8rem; color: #999; }
+
+  .track-list { display: flex; flex-direction: column; gap: .4rem; }
+  .track { display: flex; align-items: center; gap: .8rem; background: white; border-radius: 10px; padding: .7rem 1rem; box-shadow: 0 1px 4px rgba(0,0,0,.04); }
+  .track-num { width: 24px; height: 24px; border-radius: 50%; background: #f0f0f0; display: flex; align-items: center; justify-content: center; font-size: .75rem; color: #999; flex-shrink: 0; }
+  .track-info { flex: 1; min-width: 0; }
+  .track-title { font-size: .9rem; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .track-meta { font-size: .75rem; color: #aaa; margin-top: .15rem; }
+  .track-duration { font-size: .8rem; color: #888; flex-shrink: 0; }
+
+  /* Library view */
+  .library-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 1rem; }
+  .lib-card { background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,.05); transition: transform .15s; position: relative; display: flex; flex-direction: column; cursor: pointer; text-decoration: none; color: inherit; }
+  .lib-card:hover { transform: translateY(-2px); box-shadow: 0 4px 16px rgba(0,0,0,.1); }
+  .lib-card.owned { border: 2px solid #4ecdc4; }
+  .lib-card.not-owned { border: 2px solid transparent; }
+  .lib-card.not-owned:hover { border-color: #ffa07a; }
+  .lib-img { width: 100%; aspect-ratio: 1; object-fit: cover; background: #f0eeeb; }
+  .lib-body { padding: .7rem .9rem .9rem; flex: 1; display: flex; flex-direction: column; }
+  .lib-name { font-size: .9rem; font-weight: 600; margin-bottom: .2rem; }
+  .lib-desc { font-size: .78rem; color: #777; line-height: 1.35; margin-bottom: .4rem; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; flex: 1; }
+  .lib-meta { font-size: .72rem; color: #aaa; margin-bottom: .3rem; }
+  .lib-footer { display: flex; justify-content: space-between; align-items: center; }
+  .lib-publisher { font-size: .72rem; color: #aaa; }
+  .lib-price { font-size: .85rem; font-weight: 600; color: #ff6b6b; }
+  .lib-tags { display: flex; gap: .25rem; flex-wrap: wrap; margin-bottom: .3rem; }
+  .lib-tag { font-size: .62rem; padding: .12rem .45rem; border-radius: 10px; background: #f5f5f5; color: #888; }
+  .badge-owned { position: absolute; top: .6rem; right: .6rem; font-size: .62rem; padding: .2rem .5rem; border-radius: 8px; background: #4ecdc4; color: white; font-weight: 600; z-index: 1; }
+
+  .result-count { font-size: .8rem; color: #999; padding: 0 1.5rem .5rem; }
+
+  .empty { text-align: center; padding: 3rem; color: #ccc; font-size: 1.1rem; }
+
+  @media (max-width: 600px) {
+    .library-grid { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); }
+    .stats { gap: .4rem; }
+    .stat { min-width: 80px; padding: .6rem .5rem; }
+    .stat .value { font-size: 1.2rem; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Joyeuse CUBE</h1>
+  <p>JOYEUSE-515 · Firmware V05.15</p>
+</header>
+
+<div class="stats" id="stats"></div>
+<div class="space-bar" id="space-bar"></div>
+
+<div class="tabs">
+  <button class="tab active" onclick="switchTab('device')">Sur le cube</button>
+  <button class="tab" onclick="switchTab('library')">Boutique</button>
+</div>
+
+<div class="controls" id="controls">
+  <input class="search" type="text" placeholder="Rechercher..." oninput="filterItems(this.value)">
+  <button class="filter-btn" onclick="toggleFilter('owned')" id="filter-owned">Sur le cube</button>
+  <button class="filter-btn" onclick="toggleFilter('not-owned')" id="filter-not-owned">Non possédés</button>
+  <select class="sort-select" onchange="setSort(this.value)" id="sort-select">
+    <option value="default">Tri: populaires</option>
+    <option value="price-asc">Prix croissant</option>
+    <option value="price-desc">Prix décroissant</option>
+    <option value="duration-desc">Durée décroissante</option>
+    <option value="value">Meilleur rapport min/€</option>
+  </select>
+</div>
+
+<div class="result-count" id="result-count"></div>
+<div class="content" id="content"></div>
+
+<script src="library_data.js"></script>
+<script>
+const library = LIBRARY_DATA;
+
+const TOTAL_KB = 128240;
+const USED_KB = 124988;
+const FREE_KB = TOTAL_KB - USED_KB;
+const TOTAL_MB = (TOTAL_KB / 1024).toFixed(1);
+const USED_MB = (USED_KB / 1024).toFixed(1);
+const FREE_MB = (FREE_KB / 1024).toFixed(1);
+const USED_PCT = ((USED_KB / TOTAL_KB) * 100).toFixed(0);
+
+const FACE_COLORS = {
+  LION: '#f4a261', ROUGE: '#e76f51', NUAGE: '#8ecae6',
+  JAUNE: '#e9c46a', ABCDAIRE: '#2a9d8f', COEUR: '#e07a9a'
+};
+const FACE_EMOJIS = { LION: '🦁', ROUGE: '🔴', NUAGE: '☁️', JAUNE: '🟡', ABCDAIRE: '🔤', COEUR: '❤️' };
+
+const onDevice = [
+  { face: "ABCDAIRE", file: "La-grenouille-qui-veut-se-faire.mp3", title: "La grenouille qui veut se faire aussi grosse que le bœuf", duration: 53.8, size: 430560 },
+  { face: "ABCDAIRE", file: "Le-corbeau-et-le-renard.mp3", title: "Le corbeau et le renard", duration: 74.7, size: 597888 },
+  { face: "ABCDAIRE", file: "Le-lievre-et-la-tortue.mp3", title: "Le lièvre et la tortue", duration: 118.5, size: 948096 },
+  { face: "ABCDAIRE", file: "Le-loup-et-l-agneau.mp3", title: "Le loup et l'agneau", duration: 86.9, size: 694944 },
+  { face: "ABCDAIRE", file: "Le-loup-et-le-chien.mp3", title: "Le loup et le chien", duration: 166.5, size: 1332288 },
+  { face: "ABCDAIRE", file: "Le-petit-poisson-et-le-pecheur.mp3", title: "Le petit poisson et le pêcheur", duration: 79.5, size: 635616 },
+  { face: "ABCDAIRE", file: "Le-renard-et-la-cigogne.mp3", title: "Le renard et la cigogne", duration: 114.4, size: 915552 },
+  { face: "JAUNE", file: "@07_Mon_petit_lapin.mp3", title: "Mon petit lapin", duration: 66.2, size: 529676 },
+  { face: "JAUNE", file: "@08_Ah_les_crocodiles.mp3", title: "Ah les crocodiles", duration: 156.1, size: 1249100 },
+  { face: "JAUNE", file: "@09_Un_petit_pouce_qui_danse.mp3", title: "Un petit pouce qui danse", duration: 61.4, size: 491372 },
+  { face: "JAUNE", file: "@10_Laissons_la_baleine.mp3", title: "Laissons la baleine", duration: 214.7, size: 1718252 },
+  { face: "JAUNE", file: "@11_Hop_la_c_est_le_vent.mp3", title: "Hop là c'est le vent", duration: 176.7, size: 1414124 },
+  { face: "LION", file: "01_Le_Monstre_Poilu.mp3", title: "Le Monstre Poilu", duration: 442.3, size: 3538989 },
+  { face: "LION", file: "02_Le_Retour_Du_Monstre_Poilu.mp3", title: "Le Retour du Monstre Poilu", duration: 642.2, size: 5137965 },
+  { face: "LION", file: "Boucle d'or.mp3", title: "Boucle d'or", duration: 410.7, size: 3285792 },
+  { face: "LION", file: "Jack et le haricot magique.mp3", title: "Jack et le haricot magique", duration: 769.1, size: 6152544 },
+  { face: "LION", file: "L'oiseau et le cristal.mp3", title: "L'oiseau et le cristal", duration: 335.4, size: 2683008 },
+  { face: "LION", file: "La chèvre et ses 7 chevreaux.mp3", title: "La chèvre et ses 7 chevreaux", duration: 334.5, size: 2676384 },
+  { face: "LION", file: "La-chevre-biscornue.mp3", title: "La chèvre biscornue", duration: 396.9, size: 3175546 },
+  { face: "LION", file: "La-souris-et-le-voleur.mp3", title: "La souris et le voleur", duration: 301.2, size: 2410079 },
+  { face: "LION", file: "Le chat botté.mp3", title: "Le chat botté", duration: 539.0, size: 4311936 },
+  { face: "LION", file: "Le-petit-cochon-tetu.mp3", title: "Le petit cochon têtu", duration: 374.4, size: 2995258 },
+  { face: "LION", file: "Les 3 petits cochons.mp3", title: "Les 3 petits cochons", duration: 437.7, size: 3501792 },
+  { face: "LION", file: "Les habits neufs de l'empereur.mp3", title: "Les habits neufs de l'empereur", duration: 596.2, size: 4769280 },
+  { face: "LION", file: "Les-musiciens-de-Breme.mp3", title: "Les musiciens de Brême", duration: 906.7, size: 7254189 },
+  { face: "LION", file: "Les-trois-boucs.mp3", title: "Les trois boucs", duration: 236.8, size: 1894522 },
+  { face: "LION", file: "Les-trois-petits-pourceaux.mp3", title: "Les trois petits pourceaux", duration: 357.6, size: 2861050 },
+  { face: "LION", file: "Tom pouce.mp3", title: "Tom Pouce", duration: 464.5, size: 3715776 },
+  { face: "NUAGE", file: "La-toute-petite-petite-bonne-fe.mp3", title: "La toute petite petite bonne femme", duration: 209.1, size: 1672749 },
+  { face: "NUAGE", file: "La_Magie_de_Noël.mp3", title: "La Magie de Noël", duration: 262.5, size: 1561597 },
+  { face: "NUAGE", file: "Le_Sapin_De_Monsieur_Jacobi.mp3", title: "Le Sapin de Monsieur Jacobi", duration: 428.5, size: 3428316 },
+  { face: "NUAGE", file: "Les_Elfes_et_le_Cordonnier.mp3", title: "Les Elfes et le Cordonnier", duration: 319.0, size: 2552508 },
+  { face: "NUAGE", file: "Petite-Fille-et-le-loup.mp3", title: "Petite Fille et le loup", duration: 532.6, size: 4261005 },
+  { face: "ROUGE", file: "03_Le_Roi_Des_Bons.mp3", title: "Le Roi des Bons", duration: 630.4, size: 5043213 },
+  { face: "ROUGE", file: "04_Pincemi_Pincemoi_Et_La_Sorcière.mp3", title: "Pincemi Pincemoi et la Sorcière", duration: 670.1, size: 5361165 },
+  { face: "ROUGE", file: "Cot-cot-coquette.mp3", title: "Cot-cot-coquette", duration: 340.1, size: 2720736 },
+  { face: "ROUGE", file: "La biquette entêtée.mp3", title: "La biquette entêtée", duration: 224.4, size: 1794816 },
+  { face: "ROUGE", file: "La grenouille à grande bouche.mp3", title: "La grenouille à grande bouche", duration: 198.1, size: 1585152 },
+  { face: "ROUGE", file: "La mouffle.mp3", title: "La mouffle", duration: 415.6, size: 3324960 },
+  { face: "ROUGE", file: "Le gros gros gros navet.mp3", title: "Le gros gros gros navet", duration: 214.9, size: 1719072 },
+  { face: "ROUGE", file: "Le lion qui ne sentait pas très bon.mp3", title: "Le lion qui ne sentait pas très bon", duration: 161.2, size: 1289376 },
+  { face: "ROUGE", file: "Le-Petit-Chaperon-Rouge-et-fute.mp3", title: "Le Petit Chaperon Rouge et futé", duration: 709.6, size: 5676813 },
+  { face: "ROUGE", file: "Legeantdepierre.mp3", title: "Le géant de pierre", duration: 437.6, size: 3501179 },
+  { face: "ROUGE", file: "Rolandelabrigande.mp3", title: "Rolande la brigande", duration: 364.4, size: 2915649 },
+  { face: "ROUGE", file: "Roule chouquette.mp3", title: "Roule chouquette", duration: 336.7, size: 2693952 }
+];
+
+let currentTab = 'device';
+let searchQuery = '';
+let activeFilters = new Set();
+let currentSort = 'default';
+
+function fmt(secs) {
+  const m = Math.floor(secs / 60);
+  const s = Math.round(secs % 60);
+  return `${m}:${s.toString().padStart(2, '0')}`;
+}
+function fmtSize(bytes) { return (bytes / 1048576).toFixed(1) + ' Mo'; }
+
+function renderStats() {
+  const totalDuration = onDevice.reduce((s, t) => s + t.duration, 0);
+  const ownedCount = library.filter(p => p.owned).length;
+  document.getElementById('stats').innerHTML = `
+    <div class="stat"><div class="value">${onDevice.length}</div><div class="label">pistes</div></div>
+    <div class="stat"><div class="value">${Math.round(totalDuration / 60)} min</div><div class="label">sur le cube</div></div>
+    <div class="stat"><div class="value">${ownedCount}</div><div class="label">packs matchés</div></div>
+    <div class="stat"><div class="value">${library.length}</div><div class="label">en boutique</div></div>
+  `;
+}
+
+function renderSpaceBar() {
+  const pct = USED_PCT;
+  const cls = pct > 95 ? 'full' : pct > 80 ? 'warn' : 'ok';
+  const warning = FREE_KB < 5000
+    ? `<div class="space-warning">⚠ Quasi plein ! ${FREE_MB} Mo libres. Pour ajouter du contenu, il faudra retirer des pistes existantes.</div>`
+    : '';
+  document.getElementById('space-bar').innerHTML = `
+    <h3>Espace de stockage</h3>
+    <div class="bar-track"><div class="bar-fill ${cls}" style="width:${pct}%"></div></div>
+    <div class="space-details">
+      <span>${USED_MB} Mo utilisés</span>
+      <span>${FREE_MB} Mo libres sur ${TOTAL_MB} Mo</span>
+    </div>
+    ${warning}
+  `;
+}
+
+function switchTab(tab) {
+  currentTab = tab;
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.tab')[tab === 'device' ? 0 : 1].classList.add('active');
+  document.getElementById('sort-select').style.display = tab === 'library' ? '' : 'none';
+  render();
+}
+
+function toggleFilter(f) {
+  const btn = document.getElementById('filter-' + f);
+  if (activeFilters.has(f)) { activeFilters.delete(f); btn.classList.remove('active'); }
+  else { activeFilters.add(f); btn.classList.add('active'); }
+  if (f === 'owned' && activeFilters.has('not-owned')) { activeFilters.delete('not-owned'); document.getElementById('filter-not-owned').classList.remove('active'); }
+  if (f === 'not-owned' && activeFilters.has('owned')) { activeFilters.delete('owned'); document.getElementById('filter-owned').classList.remove('active'); }
+  render();
+}
+
+function setSort(v) { currentSort = v; render(); }
+function filterItems(q) { searchQuery = q.toLowerCase(); render(); }
+
+function render() {
+  if (currentTab === 'device') renderDevice();
+  else renderLibrary();
+}
+
+function renderDevice() {
+  document.getElementById('result-count').textContent = '';
+  const faces = {};
+  onDevice.forEach(t => { (faces[t.face] = faces[t.face] || []).push(t); });
+  const order = ['LION', 'ROUGE', 'NUAGE', 'JAUNE', 'ABCDAIRE'];
+  let html = '';
+  for (const face of order) {
+    const tracks = faces[face] || [];
+    const filtered = tracks.filter(t => !searchQuery || t.title.toLowerCase().includes(searchQuery));
+    if (filtered.length === 0) continue;
+    const totalDur = filtered.reduce((s, t) => s + t.duration, 0);
+    const totalSize = filtered.reduce((s, t) => s + t.size, 0);
+    html += `<div class="face-section">
+      <div class="face-header">
+        <div class="face-icon" style="background:${FACE_COLORS[face]}">${FACE_EMOJIS[face]}</div>
+        <span class="face-name">${face}</span>
+        <span class="face-count">${filtered.length} pistes · ${Math.round(totalDur / 60)} min · ${fmtSize(totalSize)}</span>
+      </div>
+      <div class="track-list">`;
+    filtered.forEach((t, i) => {
+      html += `<div class="track">
+        <div class="track-num">${i + 1}</div>
+        <div class="track-info">
+          <div class="track-title">${t.title}</div>
+          <div class="track-meta">${fmtSize(t.size)}</div>
+        </div>
+        <div class="track-duration">${fmt(t.duration)}</div>
+      </div>`;
+    });
+    html += '</div></div>';
+  }
+  document.getElementById('content').innerHTML = html || '<div class="empty">Aucun résultat</div>';
+}
+
+function renderLibrary() {
+  let items = [...library];
+  if (searchQuery) items = items.filter(p =>
+    p.name.toLowerCase().includes(searchQuery) ||
+    p.description.toLowerCase().includes(searchQuery) ||
+    p.publisher.toLowerCase().includes(searchQuery)
+  );
+  if (activeFilters.has('owned')) items = items.filter(p => p.owned);
+  if (activeFilters.has('not-owned')) items = items.filter(p => !p.owned);
+
+  if (currentSort === 'price-asc') items.sort((a, b) => (parseFloat(a.price) || 0) - (parseFloat(b.price) || 0));
+  else if (currentSort === 'price-desc') items.sort((a, b) => (parseFloat(b.price) || 0) - (parseFloat(a.price) || 0));
+  else if (currentSort === 'duration-desc') items.sort((a, b) => b.durationMins - a.durationMins);
+  else if (currentSort === 'value') items.sort((a, b) => {
+    const va = a.durationMins / (parseFloat(a.price) || 999);
+    const vb = b.durationMins / (parseFloat(b.price) || 999);
+    return vb - va;
+  });
+
+  document.getElementById('result-count').textContent = `${items.length} résultat${items.length > 1 ? 's' : ''}`;
+
+  if (items.length === 0) {
+    document.getElementById('content').innerHTML = '<div class="empty">Aucun résultat</div>';
+    return;
+  }
+
+  let html = '<div class="library-grid">';
+  items.forEach(p => {
+    const cls = p.owned ? 'owned' : 'not-owned';
+    const imgHtml = p.image ? `<img class="lib-img" src="${p.image}" alt="${p.name}" loading="lazy">` : '';
+    const metaParts = [];
+    if (p.contentType) metaParts.push(`${p.contentCount} ${p.contentType}`);
+    if (p.durationStr) metaParts.push(p.durationStr);
+    const metaHtml = metaParts.length ? `<div class="lib-meta">${metaParts.join(' · ')}</div>` : '';
+
+    html += `<a class="lib-card ${cls}" href="${p.url}" target="_blank" rel="noopener">
+      ${p.owned ? '<div class="badge-owned">✓ Sur le cube</div>' : ''}
+      ${imgHtml}
+      <div class="lib-body">
+        <div class="lib-name">${p.name}</div>
+        <div class="lib-desc">${p.description}</div>
+        ${metaHtml}
+        <div class="lib-tags">
+          ${p.tags.map(t => `<span class="lib-tag">${t}</span>`).join('')}
+        </div>
+        <div class="lib-footer">
+          <span class="lib-publisher">${p.publisher}</span>
+          <span class="lib-price">${p.price ? p.price + ' €' : 'Gratuit'}</span>
+        </div>
+      </div>
+    </a>`;
+  });
+  html += '</div>';
+  document.getElementById('content').innerHTML = html;
+}
+
+renderStats();
+renderSpaceBar();
+document.getElementById('sort-select').style.display = 'none';
+render();
+</script>
+</body>
+</html>
